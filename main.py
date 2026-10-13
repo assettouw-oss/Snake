@@ -1,203 +1,62 @@
-
-
-
 import asyncio
+import pygame
 import random
 
-import pygame
-from pygame.math import Vector2
-
-
 pygame.init()
-
-CELL_SIZE = 20
-CELL_NUMBER = 40
-SCREEN_SIZE = CELL_NUMBER * CELL_SIZE
-BACKGROUND_COLOR = (23, 42, 23)
-
-screen = pygame.display.set_mode((SCREEN_SIZE, SCREEN_SIZE))
-pygame.display.set_caption("Snake Game")
+WIDTH, HEIGHT = 600, 400
+screen = pygame.display.set_mode((WIDTH, HEIGHT))
 clock = pygame.time.Clock()
 
+snake = [(200, 200)]
+direction = (20, 0)
+food = (300, 200)
+score = 0
 
-class Food:
-    def __init__(self, snake_body):
-        self.position = None
-        self.randomize(snake_body)
-
-    def randomize(self, snake_body):
-        available_positions = [
-            Vector2(x, y)
-            for x in range(CELL_NUMBER)
-            for y in range(CELL_NUMBER)
-            if Vector2(x, y) not in snake_body
-        ]
-        if not available_positions:
-            self.position = None
-            return False
-
-        self.position = random.choice(available_positions)
-        return True
-
-    def draw(self):
-        if self.position is None:
-            return
-
-        rect = pygame.Rect(
-            int(self.position.x * CELL_SIZE),
-            int(self.position.y * CELL_SIZE),
-            CELL_SIZE,
-            CELL_SIZE,
-        )
-        pygame.draw.rect(screen, (230, 129, 129), rect)
-
-
-class Snake:
-    def __init__(self):
-        self.direction = Vector2(1, 0)
-        self.body = [Vector2(5, 4), Vector2(4, 4), Vector2(3, 4)]
-
-    def move(self, grow=False):
-        new_head = self.body[0] + self.direction
-        if grow:
-            self.body.insert(0, new_head)
-        else:
-            self.body = [new_head] + self.body[:-1]
-
-    def has_hit_itself(self):
-        return self.body[0] in self.body[1:]
-
-    def draw(self):
-        for segment in self.body:
-            rect = pygame.Rect(
-                int(segment.x * CELL_SIZE),
-                int(segment.y * CELL_SIZE),
-                CELL_SIZE,
-                CELL_SIZE,
-            )
-            pygame.draw.rect(screen, (100, 200, 100), rect)
-
-
-class Game:
-    def __init__(self):
-        self.score_font = pygame.font.SysFont("Arial", 24, bold=True)
-        self.message_font = pygame.font.SysFont("Arial", 36, bold=True)
-        self.reset()
-
-    def reset(self):
-        self.snake = Snake()
-        self.food = Food(self.snake.body)
-        self.score = 0
-        self.game_over = False
-        self.won = False
-
-    def update(self):
-        if self.game_over:
-            return
-
-        next_head = self.snake.body[0] + self.snake.direction
-        ate_food = next_head == self.food.position
-        self.snake.move(grow=ate_food)
-
-        if ate_food:
-            self.score += 1
-            if not self.food.randomize(self.snake.body):
-                self.game_over = True
-                self.won = True
-
-        head = self.snake.body[0]
-        hit_wall = (
-            head.x < 0
-            or head.x >= CELL_NUMBER
-            or head.y < 0
-            or head.y >= CELL_NUMBER
-        )
-        if hit_wall or self.snake.has_hit_itself():
-            self.game_over = True
-
-    def draw(self):
-        screen.fill(BACKGROUND_COLOR)
-        self.food.draw()
-        self.snake.draw()
-
-        score_surface = self.score_font.render(
-            f"Score : {self.score}", True, (230, 230, 230)
-        )
-        screen.blit(score_surface, (10, 10))
-
-        if self.game_over:
-            message = "You win !" if self.won else "Game over"
-            message_surface = self.message_font.render(
-                message, True, (255, 255, 255)
-            )
-            prompt_surface = self.score_font.render(
-                "Appuie sur R pour recommencer", True, (230, 230, 230)
-            )
-            message_rect = message_surface.get_rect(
-                center=(SCREEN_SIZE // 2, SCREEN_SIZE // 2 - 25)
-            )
-            prompt_rect = prompt_surface.get_rect(
-                center=(SCREEN_SIZE // 2, SCREEN_SIZE // 2 + 20)
-            )
-            screen.blit(message_surface, message_rect)
-            screen.blit(prompt_surface, prompt_rect)
-
-
-UPDATE_EVENT = pygame.USEREVENT
-
+def new_food():
+    return (random.randint(0, (WIDTH-20)//20)*20, random.randint(0, (HEIGHT-20)//20)*20)
 
 async def main():
-    main_game = Game()
-    pygame.time.set_timer(UPDATE_EVENT, 150)
-
-    while True:
+    global snake, direction, food, score
+    running = True
+    while running:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
-                pygame.quit()
-                return
-
-            if event.type == UPDATE_EVENT:
-                main_game.update()
-
+                running = False
             if event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_r and main_game.game_over:
-                    main_game.reset()
-                elif event.key == pygame.K_UP and main_game.snake.direction != Vector2(0, 1):
-                    main_game.snake.direction = Vector2(0, -1)
-                elif event.key == pygame.K_DOWN and main_game.snake.direction != Vector2(0, -1):
-                    main_game.snake.direction = Vector2(0, 1)
-                elif event.key == pygame.K_LEFT and main_game.snake.direction != Vector2(1, 0):
-                    main_game.snake.direction = Vector2(-1, 0)
-                elif event.key == pygame.K_RIGHT and main_game.snake.direction != Vector2(-1, 0):
-                    main_game.snake.direction = Vector2(1, 0)
+                if event.key == pygame.K_UP and direction!= (0, 20):
+                    direction = (0, -20)
+                if event.key == pygame.K_DOWN and direction!= (0, -20):
+                    direction = (0, 20)
+                if event.key == pygame.K_LEFT and direction!= (20, 0):
+                    direction = (-20, 0)
+                if event.key == pygame.K_RIGHT and direction!= (-20, 0):
+                    direction = (20, 0)
 
-        main_game.draw()
+        # bouge serpent
+        head = (snake[0][0] + direction[0], snake[0][1] + direction[1])
+        # murs
+        if head[0] < 0 or head[0] >= WIDTH or head[1] < 0 or head[1] >= HEIGHT or head in snake:
+            snake = [(200, 200)]
+            direction = (20, 0)
+            score = 0
+            food = new_food()
+            continue
+
+        snake.insert(0, head)
+        if head == food:
+            score += 1
+            food = new_food()
+        else:
+            snake.pop()
+
+        screen.fill((0, 0, 0))
+        for s in snake:
+            pygame.draw.rect(screen, (0, 255, 0), (*s, 20, 20))
+        pygame.draw.rect(screen, (255, 0, 0), (*food, 20, 20))
         pygame.display.flip()
-        clock.tick(60)
+        clock.tick(10)
         await asyncio.sleep(0)
+
 asyncio.run(main())
-# Snake
 
-Jeu Snake créé avec Python et Pygame. La version web est construite avec
-[Pygbag](https://pygame-web.github.io/) et publiée sur GitHub Pages.
 
-## Jouer en local
-
-Installe Pygame, puis lance `python main.py` depuis ce dossier.
-
-Contrôles : flèches du clavier pour diriger le serpent ; `R` pour recommencer
-après une partie.
-
-## Publier le jeu en ligne
-
-1. Crée un dépôt GitHub nommé `Snake` et ajoute les fichiers de ce dossier.
-2. Dans **Settings > Actions > General**, choisis **Read and write permissions**
-   pour les permissions du workflow.
-3. Envoie les fichiers sur la branche `main`. Le workflow construit le jeu pour
-   le navigateur et crée la branche `gh-pages`. Tu peux suivre l’avancement dans
-   l’onglet **Actions**.
-4. Une fois le premier workflow terminé, dans **Settings > Pages**, sélectionne
-   la branche `gh-pages` comme source du site.
-
-L’adresse du jeu sera de la forme
-`https://TON-NOM-GITHUB.github.io/Snake/`.
