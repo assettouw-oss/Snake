@@ -1,200 +1,256 @@
-import asyncio
 import random
-
 import pygame
-from pygame.math import Vector2
+pygame.init()
+CELL_SIZE = 20
+CELL_NUMBER = 30
+WIDTH = CELL_SIZE * CELL_NUMBER
+HEIGHT = CELL_SIZE * CELL_NUMBER
+GAME_HEIGHT = HEIGHT - 100
+FPS = 5
+BACKGROUND = (23, 42, 23)
+DARK_GREEN = (16, 31, 18)
+GREEN = (90, 220, 100)
+LIGHT_GREEN = (145, 255, 145)
+PINK = (255, 105, 160)
+WHITE = (245, 245, 245)
+GRAY = (185, 195, 185)
+BUTTON_GREEN = (50, 155, 75)
+BUTTON_HOVER = (70, 190, 95)
+screen = pygame.display.set_mode((WIDTH, HEIGHT))
+pygame.display.set_caption("SNAKE")
+clock = pygame.time.Clock()
+title_font = pygame.font.Font(None, 88)
+large_font = pygame.font.Font(None, 58)
+medium_font = pygame.font.Font(None, 36)
+small_font = pygame.font.Font(None, 24)
+arrow_font = pygame.font.Font(None, 48)
 
+play_button = pygame.Rect(WIDTH // 2 - 105, HEIGHT // 2 + 35, 210, 65)
+BUTTON_SIZE = 54
+CX = WIDTH // 2
+CY = GAME_HEIGHT + 48
+UP_BUTTON = pygame.Rect(CX - BUTTON_SIZE // 2, CY - 56, BUTTON_SIZE, BUTTON_SIZE)
+LEFT_BUTTON = pygame.Rect(CX - BUTTON_SIZE - 12, CY, BUTTON_SIZE, BUTTON_SIZE)
+DOWN_BUTTON = pygame.Rect(CX - BUTTON_SIZE // 2, CY, BUTTON_SIZE, BUTTON_SIZE)
+RIGHT_BUTTON = pygame.Rect(CX + 12, CY, BUTTON_SIZE, BUTTON_SIZE)
+
+def draw_text(text, font, color, center):
+    surf = font.render(text, True, color)
+    screen.blit(surf, surf.get_rect(center=center))
+
+def draw_button(rect, label, mouse_pos, font=medium_font):
+    color = BUTTON_HOVER if rect.collidepoint(mouse_pos) else BUTTON_GREEN
+    pygame.draw.rect(screen, color, rect, border_radius=12)
+    pygame.draw.rect(screen, LIGHT_GREEN, rect, 2, border_radius=12)
+    draw_text(label, font, WHITE, rect.center)
+
+def random_food(snake):
+    while True:
+        food = pygame.Vector2(random.randrange(CELL_NUMBER),
+                              random.randrange(GAME_HEIGHT // CELL_SIZE))
+        if food not in snake:
+            return food
+
+def new_game():
+    start = pygame.Vector2(CELL_NUMBER // 2, (GAME_HEIGHT // CELL_SIZE) // 2)
+    snake = [start, start - pygame.Vector2(1, 0), start - pygame.Vector2(2, 0)]
+    direction = pygame.Vector2(1, 0)
+    return snake, direction, direction, random_food(snake), 0
+
+def draw_cell(pos, color):
+    rect = pygame.Rect(int(pos.x * CELL_SIZE) + 2, int(pos.y * CELL_SIZE) + 2,
+                       CELL_SIZE - 4, CELL_SIZE - 4)
+    pygame.draw.rect(screen, color, rect, border_radius=5)
+
+def draw_controls(mouse_pos):
+    pygame.draw.rect(screen, DARK_GREEN, (0, GAME_HEIGHT, WIDTH, HEIGHT - GAME_HEIGHT))
+    draw_text("DIRECTION", small_font, GRAY, (WIDTH // 2, GAME_HEIGHT + 14))
+    draw_button(UP_BUTTON, "↑", mouse_pos, arrow_font)
+    draw_button(LEFT_BUTTON, "←", mouse_pos, arrow_font)
+    draw_button(DOWN_BUTTON, "↓", mouse_pos, arrow_font)
+    draw_button(RIGHT_BUTTON, "→", mouse_pos, arrow_font)
+
+def draw_game(snake, food, score, mouse_pos):
+    screen.fill(BACKGROUND)
+    pygame.draw.circle(screen, PINK,
+                       (int(food.x * CELL_SIZE + CELL_SIZE / 2),
+                        int(food.y * CELL_SIZE + CELL_SIZE / 2)), CELL_SIZE // 2 - 2)
+    for i, segment in enumerate(snake):
+        draw_cell(segment, LIGHT_GREEN if i == 0 else GREEN)
+    screen.blit(medium_font.render(f"Score : {score}", True, WHITE), (12, 10))
+    draw_controls(mouse_pos)
+
+def draw_home(mouse_pos):
+    screen.fill(DARK_GREEN)
+    pygame.draw.circle(screen, BACKGROUND, (WIDTH // 2, HEIGHT // 2 - 55), 135)
+    draw_text("SNAKE", title_font, LIGHT_GREEN, (WIDTH // 2, HEIGHT // 2 - 115))
+    draw_text("Mange les fruits et grandis !", small_font, GRAY,
+              (WIDTH // 2, HEIGHT // 2 - 48))
+    for i in range(5):
+        pygame.draw.rect(screen, LIGHT_GREEN if i == 0 else GREEN,
+                         (WIDTH // 2 - 50 + i * 23, HEIGHT // 2 - 15, 19, 19),
+                         border_radius=5)
+    draw_button(play_button, "JOUER", mouse_pos)
+    draw_text("Flèches ou ZQSD au clavier", small_font, GRAY,
+              (WIDTH // 2, HEIGHT - 42))
+
+def draw_game_over(mouse_pos, score):
+    screen.fill(DARK_GREEN)
+    draw_text("GAME OVER", large_font, WHITE, (WIDTH // 2, HEIGHT // 2 - 100))
+    draw_text(f"Score final : {score}", medium_font, LIGHT_GREEN,
+              (WIDTH // 2, HEIGHT // 2 - 45))
+    draw_button(play_button, "REJOUER", mouse_pos)
+    draw_text("Clique pour rejouer • Échap pour quitter", small_font, GRAY,
+              (WIDTH // 2, HEIGHT - 42))
+
+def set_direction(new_direction):
+    global next_direction
+    if new_direction.x != -direction.x or new_direction.y != -direction.y:
+        next_direction = new_direction
+
+def handle_direction_button(pos):
+    if UP_BUTTON.collidepoint(pos):
+        set_direction(pygame.Vector2(0, -1))
+    elif DOWN_BUTTON.collidepoint(pos):
+        set_direction(pygame.Vector2(0, 1))
+    elif LEFT_BUTTON.collidepoint(pos):
+        set_direction(pygame.Vector2(-1, 0))
+    elif RIGHT_BUTTON.collidepoint(pos):
+        set_direction(pygame.Vector2(1, 0))
+
+HOME, PLAYING, GAME_OVER = "home", "playing", "game_over"
+state = HOME
+snake, direction, next_direction, food, score = new_game()
+running = True
+move_event = pygame.USEREVENT + 1
+pygame.time.set_timer(move_event, 1000 // FPS)
+
+while running:
+    mouse_pos = pygame.mouse.get_pos()
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            running = False
+        elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+            if state in (HOME, GAME_OVER) and play_button.collidepoint(event.pos):
+                snake, direction, next_direction, food, score = new_game()
+                state = PLAYING
+            elif state == PLAYING:
+                handle_direction_button(event.pos)
+        elif event.type == pygame.FINGERDOWN and state == PLAYING:
+            handle_direction_button((int(event.x * WIDTH), int(event.y * HEIGHT)))
+        elif event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_ESCAPE:
+                state = HOME if state == PLAYING else state
+                if state == HOME:
+                    running = False
+            elif state == HOME and event.key in (pygame.K_RETURN, pygame.K_SPACE):
+                snake, direction, next_direction, food, score = new_game()
+                state = PLAYING
+            elif state == GAME_OVER and event.key == pygame.K_r:
+                snake, direction, next_direction, food, score = new_game()
+                state = PLAYING
+            elif state == PLAYING:
+                if event.key in (pygame.K_UP, pygame.K_z):
+                    set_direction(pygame.Vector2(0, -1))
+                elif event.key in (pygame.K_DOWN, pygame.K_s):
+                    set_direction(pygame.Vector2(0, 1))
+                elif event.key in (pygame.K_LEFT, pygame.K_q):
+                    set_direction(pygame.Vector2(-1, 0))
+                elif event.key in (pygame.K_RIGHT, pygame.K_d):
+                    set_direction(pygame.Vector2(1, 0))
+        elif event.type == move_event and state == PLAYING:
+            direction = next_direction
+            head = snake[0] + direction
+            if (head.x < 0 or head.x >= CELL_NUMBER or
+                    head.y < 0 or head.y >= GAME_HEIGHT // CELL_SIZE):
+                state = GAME_OVER
+                continue
+            eating = head == food
+            body = snake if eating else snake[:-1]
+            if head in body:
+                state = GAME_OVER
+                continue
+            snake.insert(0, head)
+            if eating:
+                score += 1
+                food = random_food(snake)
+            else:
+                snake.pop()
+
+    if state == HOME:
+        draw_home(mouse_pos)
+    elif state == PLAYING:
+        draw_game(snake, food, score, mouse_pos)
+    else:
+        draw_game_over(mouse_pos, score)
+    pygame.display.flip()
+    clock.tick(60)
+
+pygame.quit()
+
+
+
+
+
+
+
+
+
+
+
+
+
+import random, os, math
+import pygame
 
 pygame.init()
+# --- MUSIQUE ---
+try:
+    pygame.mixer.init(frequency=22050, size=-16, channels=2, buffer=512)
+    MUSIC_ENABLED = True
+except:
+    MUSIC_ENABLED = False
 
 CELL_SIZE = 20
 CELL_NUMBER = 30
-SCREEN_SIZE = CELL_NUMBER * CELL_SIZE
-BACKGROUND_COLOR = (23, 5, 23)
+WIDTH = CELL_SIZE * CELL_NUMBER
+HEIGHT = CELL_SIZE * CELL_NUMBER
+GAME_HEIGHT = HEIGHT - 100
+FPS = 5
 
-screen = pygame.display.set_mode((SCREEN_SIZE, SCREEN_SIZE))
-pygame.display.set_caption("Snake Game")
+BACKGROUND = (23, 42, 23)
+DARK_GREEN = (16, 31, 18)
+GREEN = (90, 220, 100)
+LIGHT_GREEN = (145, 255, 145)
+PINK = (255, 105, 160)
+WHITE = (245, 245, 245)
+GRAY = (185, 195, 185)
+BUTTON_GREEN = (50, 155, 75)
+BUTTON_HOVER = (70, 190, 95)
+
+screen = pygame.display.set_mode((WIDTH, HEIGHT))
+pygame.display.set_caption("SNAKE - Music ON [M]")
 clock = pygame.time.Clock()
+title_font = pygame.font.Font(None, 88)
+large_font = pygame.font.Font(None, 58)
+medium_font = pygame.font.Font(None, 36)
+small_font = pygame.font.Font(None, 24)
+arrow_font = pygame.font.Font(None, 48)
 
+play_button = pygame.Rect(WIDTH // 2 - 105, HEIGHT // 2 + 35, 210, 65)
+BUTTON_SIZE = 54
+CX = WIDTH // 2
+CY = GAME_HEIGHT + 48
+UP_BUTTON = pygame.Rect(CX - BUTTON_SIZE // 2, CY - 56, BUTTON_SIZE, BUTTON_SIZE)
+LEFT_BUTTON = pygame.Rect(CX - BUTTON_SIZE - 12, CY, BUTTON_SIZE, BUTTON_SIZE)
+DOWN_BUTTON = pygame.Rect(CX - BUTTON_SIZE // 2, CY, BUTTON_SIZE, BUTTON_SIZE)
+RIGHT_BUTTON = pygame.Rect(CX + 12, CY, BUTTON_SIZE, BUTTON_SIZE)
 
-class Food:
-    def __init__(self, snake_body):
-        self.position = None
-        self.randomize(snake_body)
-
-    def randomize(self, snake_body):
-        available_positions = [
-            Vector2(x, y)
-            for x in range(CELL_NUMBER)
-            for y in range(CELL_NUMBER)
-            if Vector2(x, y) not in snake_body
-        ]
-        if not available_positions:
-            self.position = None
-            return False
-
-        self.position = random.choice(available_positions)
-        return True
-
-    def draw(self):
-        if self.position is None:
-            return
-
-        rect = pygame.Rect(
-            int(self.position.x * CELL_SIZE),
-            int(self.position.y * CELL_SIZE),
-            CELL_SIZE,
-            CELL_SIZE,
-        )
-        pygame.draw.rect(screen, (240, 129, 129), rect)
-
-
-class Snake:
-    def __init__(self):
-        self.direction = Vector2(1, 0)
-        self.body = [Vector2(5, 4), Vector2(4, 4), Vector2(3, 4)]
-
-    def move(self, grow=False):
-        new_head = self.body[0] + self.direction
-        if grow:
-            self.body.insert(0, new_head)
-        else:
-            self.body = [new_head] + self.body[:-1]
-
-    def has_hit_itself(self):
-        return self.body[0] in self.body[1:]
-
-    def draw(self):
-        for segment in self.body:
-            rect = pygame.Rect(
-                int(segment.x * CELL_SIZE),
-                int(segment.y * CELL_SIZE),
-                CELL_SIZE,
-                CELL_SIZE,
-            )
-            pygame.draw.rect(screen, (100, 200, 100), rect)
-
-
-class Game:
-    def __init__(self):
-        self.score_font = pygame.font.SysFont("Arial", 24, bold=True)
-        self.message_font = pygame.font.SysFont("Arial", 36, bold=True)
-        self.reset()
-
-    def reset(self):
-        self.snake = Snake()
-        self.food = Food(self.snake.body)
-        self.score = 0
-        self.game_over = False
-        self.won = False
-
-    def update(self):
-        if self.game_over:
-            return
-
-        next_head = self.snake.body[0] + self.snake.direction
-        ate_food = next_head == self.food.position
-        self.snake.move(grow=ate_food)
-
-        if ate_food:
-            self.score += 1
-            if not self.food.randomize(self.snake.body):
-                self.game_over = True
-                self.won = True
-
-        head = self.snake.body[0]
-        hit_wall = (
-            head.x < 0
-            or head.x >= CELL_NUMBER
-            or head.y < 0
-            or head.y >= CELL_NUMBER
-        )
-        if hit_wall or self.snake.has_hit_itself():
-            self.game_over = True
-
-    def draw(self):
-        screen.fill(BACKGROUND_COLOR)
-        self.food.draw()
-        self.snake.draw()
-
-        score_surface = self.score_font.render(
-            f"Score : {self.score}", True, (230, 230, 230)
-        )
-        screen.blit(score_surface, (10, 10))
-
-        if self.game_over:
-            message = "You win !" if self.won else "Game over"
-            message_surface = self.message_font.render(
-                message, True, (255, 255, 255)
-            )
-            prompt_surface = self.score_font.render(
-                "Appuie sur R pour recommencer", True, (230, 230, 230)
-            )
-            message_rect = message_surface.get_rect(
-                center=(SCREEN_SIZE // 2, SCREEN_SIZE // 2 - 25)
-            )
-            prompt_rect = prompt_surface.get_rect(
-                center=(SCREEN_SIZE // 2, SCREEN_SIZE // 2 + 20)
-            )
-            screen.blit(message_surface, message_rect)
-            screen.blit(prompt_surface, prompt_rect)
-
-
-UPDATE_EVENT = pygame.USEREVENT
-
-
-async def main():
-    main_game = Game()
-    pygame.time.set_timer(UPDATE_EVENT, 200)
-
-    while True:
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                pygame.quit()
-                return
-
-            if event.type == UPDATE_EVENT:
-                main_game.update()
-
-            if event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_r and main_game.game_over:
-                    main_game.reset()
-                elif event.key == pygame.K_UP and main_game.snake.direction != Vector2(0, 1):
-                    main_game.snake.direction = Vector2(0, -1)
-                elif event.key == pygame.K_DOWN and main_game.snake.direction != Vector2(0, -1):
-                    main_game.snake.direction = Vector2(0, 1)
-                elif event.key == pygame.K_LEFT and main_game.snake.direction != Vector2(1, 0):
-                    main_game.snake.direction = Vector2(-1, 0)
-                elif event.key == pygame.K_RIGHT and main_game.snake.direction != Vector2(-1, 0):
-                    main_game.snake.direction = Vector2(1, 0)
-
-        main_game.draw()
-        pygame.display.flip()
-        clock.tick(60)
-        await asyncio.sleep(0)
-asyncio.run(main())
-# Snake
-
-Jeu Snake créé avec Python et Pygame. La version web est construite avec
-[Pygbag](https://pygame-web.github.io/) et publiée sur GitHub Pages.
-
-## Jouer en local
-
-Installe Pygame, puis lance `python main.py` depuis ce dossier.
-
-Contrôles : flèches du clavier pour diriger le serpent ; `R` pour recommencer
-après une partie.
-
-## Publier le jeu en ligne
-
-1. Crée un dépôt GitHub nommé `Snake` et ajoute les fichiers de ce dossier.
-2. Dans **Settings > Actions > General**, choisis **Read and write permissions**
-   pour les permissions du workflow.
-3. Envoie les fichiers sur la branche `main`. Le workflow construit le jeu pour
-   le navigateur et crée la branche `gh-pages`. Tu peux suivre l’avancement dans
-   l’onglet **Actions**.
-4. Une fois le premier workflow terminé, dans **Settings > Pages**, sélectionne
-   la branche `gh-pages` comme source du site.
-
-L’adresse du jeu sera de la forme
-`https://TON-NOM-GITHUB.github.io/Snake/`.
+# ====== MUSIQUE SANS FICHIER ======
+def make_tone(freq, duration_ms, volume=0.25, waveform='sine'):
+    if not MUSIC_ENABLED:
+        return None
+    try:
+        sample_rate = 44100
+    except Exception:
+        return None
