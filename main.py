@@ -190,7 +190,7 @@ def draw_home(screen, fonts, mouse_pos, selected_difficulty, best_score, stars, 
     start_x = (WINDOW_WIDTH - (button_width * 3 + gap * 2)) // 2
     for index, (name, _) in enumerate(DIFFICULTIES):
         rect = pygame.Rect(start_x + index * (button_width + gap), 416, button_width, 52)
-        difficulty_rects.append(rect)
+        difficulty_rects.append(rect) 
         draw_button(
             screen,
             rect,
