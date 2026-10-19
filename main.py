@@ -44,7 +44,7 @@ async def main():
     state = HOME
     snake, direction, food, score = new_game()
     next_dir = direction
-    FPS = 8
+    FPS = 10
     move_timer = 0
 
     running = True
