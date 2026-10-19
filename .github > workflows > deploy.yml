@@ -1,7 +1,7 @@
-name: Deploy Snake to Pages
+name: Deploy Snake sur les pages
 on:
   push:
-    branches: ["main"]
+    branches: ["Principaux"]
   workflow_dispatch:
 
 permissions:
@@ -23,6 +23,7 @@ jobs:
       - uses: actions/upload-pages-artifact@v3
         with:
           path: build/web
+
   deploy:
     environment:
       name: github-pages
