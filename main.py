@@ -14,7 +14,7 @@ PINK = (255, 105, 160)
 WHITE = (245, 245, 245)
 GRAY = (185, 195, 185)
 BUTTON_GREEN = (50, 155, 75)
-BUTTON_HOVER = (70, 190, 95)
+BUTTON_HOVER = (70, 190, 95) 
 
 async def main():
     pygame.init()
