@@ -56,42 +56,25 @@ présente les commandes clavier et téléphone ; appuie sur **C'EST PARTI !** ou
 `Entrée` pour commencer. Le tutoriel n'est affiché qu'une fois et son état est
 conservé dans `moto_bamako_save.json`. Pendant la course, `Espace`, `Flèche haut`
 ou un clic fait sauter la moto. Sur téléphone, touche le bouton **SAUTER**
-affiché en bas à droite ; touche-le deux fois rapidement pour faire un double
-saut et prolonger l'ascension. Le double appui fonctionne aussi au clavier.
-Le deuxième saut déclenche un salto visuel de la moto, sans ajouter de troisième saut.
-`P` ou `Échap` met la partie en pause.
-Choisis **DÉCOUVERTE**, **NORMAL** ou **EXPERT** dans **RÉGLAGES** (ou avec `D`) :
+affiché en bas à droite ; `P` ou `Échap` met la partie en pause.
+Choisis **DÉCOUVERTE**, **NORMAL** ou **EXPERT** au menu (bouton ou touche `D`) :
 la vitesse et la fréquence des obstacles changent selon la difficulté.
 Chaque course propose une mission avec une récompense de 250 points ; le décor
 évolue entre le centre de Bamako, le Sahel et le grand marché. Une collision
 avec un obstacle termine immédiatement la course. Ramasse les pièces pour
 gagner 25 points et les bonus dorés pour gagner 100 points.
-Les pièges comprennent maintenant les trous, dos-d'âne, Sotrama, grosses pierres,
-barrières de chantier et bidons ; il faut les sauter ou les éviter en dirigeant
-la moto, car tout contact met fin à la course.
-Le menu propose 33 routes avec des chaussées, marquages, paysages et ambiances
-visuelles différents (piste en terre, berges, autoroute, route de nuit, dunes,
-forêt, lac, falaises, etc.). La première est disponible au départ ; chaque
+Le menu propose aussi 10 routes avec des chaussées et marquages distincts
+(piste en terre, passage piéton, berges, autoroute, route de nuit, dunes, etc.)
+et des ambiances différentes. La première est disponible au départ ; chaque
 route suivante se débloque en battant un nouveau record par tranche de
-1 000 points, jusqu'à 32 000 points pour la route 33. Le menu indique le nombre
+1 000 points, jusqu'à 9 000 points pour la dixième. Le menu indique le nombre
 de routes débloquées et le score restant avant la prochaine. Utilise les boutons
 `<` et `>` ou les flèches gauche/droite pour choisir parmi les routes débloquées.
-Chaque route a maintenant des couleurs de terrain et de chaussée harmonisées,
-avec un léger reflet sur la route pour mieux la distinguer.
 Après une défaite, `Espace` ou `R` permet de recommencer. Le record est enregistré dans
 `moto_bamako_save.json` à côté du script. Le jeu, la musique et les effets
-sonores originaux sont générés directement dans `main.py`, sans fichier audio
-externe. Chaque route possède sa mélodie et son tempo. La sonorité alterne entre
-plusieurs instruments synthétisés (piano, cloche, marimba, orgue, corde pincée
-et synthétiseur) ; les effets sonores reprennent l'instrument et la tonalité de
-la route sélectionnée. Le bouton
-**RÉGLAGES** du menu permet de modifier
-le volume de la musique et des effets, la difficulté et l'affichage des boutons
-tactiles de direction. Les boutons tactiles de saut et de pause restent
-disponibles ; si les commandes de direction sont désactivées, le saut tactile
-fonctionne toujours. Les préférences sont sauvegardées avec le record. Appuie
-sur `M` pour couper ou rétablir le son. La musique s'arrête à la fin de la course
-et reprend au lancement de la partie suivante.
+sonores originaux sont contenus dans `main.py` ; appuie sur `M` pour couper ou
+rétablir le son. La musique s'arrête à la fin de la course et reprend au
+lancement de la partie suivante.
 
 ### Jouer sur téléphone
 
@@ -104,4 +87,3 @@ la moto. Au clavier, utilise aussi les flèches `←` et `→` ou `A` et `D`.
 Mets le téléphone à l'horizontale pour profiter de tout l'écran.
 La boucle du jeu cède régulièrement le contrôle au navigateur pour permettre
 au rendu Web et aux événements tactiles de fonctionner.
-
